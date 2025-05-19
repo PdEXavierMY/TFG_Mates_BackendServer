@@ -96,21 +96,21 @@ def ejecutar():
             color = detectar_pieza(robot)
 
             if color:
-                print(f"🎯 Pieza {color} detectada.")
+                print(f"Pieza {color} detectada.")
                 time.sleep(1)
                 apagar_cinta()  # Apagar la cinta al detectar una pieza
 
                 if color == 'verde':
-                    print("🟢 Es verde: dejarla pasar por 5 segundos.")
+                    print("Es verde: dejarla pasar por 5 segundos.")
                     time.sleep(2)
                     encender_cinta()
                     time.sleep(5)
                     apagar_cinta()
-                    print("✅ Fin del proceso con pieza verde.")
+                    print("Fin del proceso con pieza verde.")
                     break
 
                 else:
-                    print(f"🔄 Es {color}: proceder a recoger y colocar.")
+                    print(f"Es {color}: proceder a recoger y colocar.")
                     # Intentar detectar y agarrar la pieza
                     robot.clear_collision_detected()  # Limpiar colisiones detectadas
                     robot.move(observer_worspace_pose)
@@ -118,29 +118,28 @@ def ejecutar():
                     obj_found, shape, detected_color = robot.vision_pick("color_pick2")
 
                     if obj_found and shape:
-                        print(f"🤖 Pieza detectada")
+                        print(f"Pieza detectada")
                         robot.move(place_pose_cinta_arriba)
                         robot.move(place_pose_cinta)
                         # Colocar la pieza
                         robot.place(place_pose_cinta)
 
-                        print("✅ Pieza colocada correctamente.")
+                        print("Pieza colocada correctamente.")
                         robot.move(place_pose_cinta_arriba)
                         robot.move(neutral_pose)
                     else:
-                        print("⚠️ No se pudo detectar ninguna pieza para agarrar.")
+                        print("No se pudo detectar ninguna pieza para agarrar.")
 
                     break
 
             else:
-                print("⏳ Aún sin pieza detectada...")
+                print("Aún sin pieza detectada...")
 
         except Exception as e:
-            print(f"⚠️ Error durante la detección: {e}")
+            print(f"Error durante la detección: {e}")
 
         time.sleep(1.5)
 
 
 if __name__ == "__main__":
-    while True:
-        ejecutar()  # Ejecutar el programa principal
+    ejecutar()  # Ejecutar el programa principal

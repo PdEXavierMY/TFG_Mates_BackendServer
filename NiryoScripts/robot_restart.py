@@ -23,6 +23,4 @@ if __name__ == "__main__":
     apagar_cinta()
     # Volver a la posición neutral
     robot.move(neutral_pose)
-
-    # Desconectar el robot
-    robot.close()
+    robot.open_gripper()
