@@ -1,0 +1,6 @@
+[2025-05-19 12:47:12.128205] Script terminado: prueba
+Salida:
+Hola desde el script de prueba.
+Este script fue ejecutado exitosamente.
+
+
