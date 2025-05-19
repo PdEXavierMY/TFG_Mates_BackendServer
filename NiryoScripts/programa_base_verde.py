@@ -100,13 +100,13 @@ def ejecutar():
                 time.sleep(1)
                 apagar_cinta()  # Apagar la cinta al detectar una pieza
 
-                if color == 'rojo':
-                    print("🔴 Es roja: dejarla pasar por 5 segundos.")
+                if color == 'verde':
+                    print("🟢 Es verde: dejarla pasar por 5 segundos.")
                     time.sleep(2)
                     encender_cinta()
                     time.sleep(5)
                     apagar_cinta()
-                    print("✅ Fin del proceso con pieza roja.")
+                    print("✅ Fin del proceso con pieza verde.")
                     break
 
                 else:
@@ -115,7 +115,7 @@ def ejecutar():
                     robot.clear_collision_detected()  # Limpiar colisiones detectadas
                     robot.move(observer_worspace_pose)
                     # Intentar detectar y agarrar la pieza
-                    obj_found, shape, detected_color = robot.vision_pick("color_pick")
+                    obj_found, shape, detected_color = robot.vision_pick("color_pick2")
 
                     if obj_found and shape:
                         print(f"🤖 Pieza detectada")
