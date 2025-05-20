@@ -120,7 +120,6 @@ def parar_script():
 
     if script_thread and script_thread.is_alive():
         stop_event.set()
-        # También intentamos parar proceso si sigue vivo
         if script_process and script_process.poll() is None:
             if os.name == 'nt':
                 script_process.terminate()
@@ -137,8 +136,21 @@ def parar_script():
 
 @app.route('/restart', methods=['POST'])
 def reiniciar_robot():
+    global stop_event, script_thread, script_actual, script_process
+
     nombre_script = "robot_restart"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
+
+    if script_thread and script_thread.is_alive():
+        stop_event.set()
+        if script_process and script_process.poll() is None:
+            if os.name == 'nt':
+                script_process.terminate()
+            else:
+                script_process.send_signal(signal.SIGINT)
+            script_process.wait(timeout=5)
+        script_thread.join(timeout=10)
+        script_actual = None
 
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado o inaccesible'}), 503
@@ -162,8 +174,21 @@ def reiniciar_robot():
 
 @app.route('/calibrar', methods=['POST'])
 def calibrar_robot():
+    global stop_event, script_thread, script_actual, script_process
+
     nombre_script = "calibrar_robot"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
+
+    if script_thread and script_thread.is_alive():
+        stop_event.set()
+        if script_process and script_process.poll() is None:
+            if os.name == 'nt':
+                script_process.terminate()
+            else:
+                script_process.send_signal(signal.SIGINT)
+            script_process.wait(timeout=5)
+        script_thread.join(timeout=10)
+        script_actual = None
 
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado o inaccesible'}), 503
