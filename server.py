@@ -206,6 +206,27 @@ def calibrar_robot():
             'codigo': e.returncode
         }), 500
 
+LOG_FILE = 'log.txt'
+LAST_POSITION = 0
+LAST_CONTENT = ""
+
+@app.route('/logs/latest')
+def get_latest_logs():
+    global LAST_POSITION, LAST_CONTENT
+
+    if not os.path.exists(LOG_FILE):
+        return jsonify({"log": ""})
+
+    with open(LOG_FILE, 'r') as f:
+        f.seek(LAST_POSITION)
+        new_data = f.read()
+        if new_data:
+            LAST_POSITION = f.tell()
+            LAST_CONTENT = new_data
+            return jsonify({"log": new_data})
+        else:
+            return jsonify({"log": False})
+
 '''@app.route('/status', methods=['GET'])
 def estado_script():
     if not comprobar_conexion():
