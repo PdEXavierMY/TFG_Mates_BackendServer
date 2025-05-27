@@ -9,9 +9,6 @@ import time
 robot = NiryoRobot("192.168.217.107")  # Cambia esta IP por la del robot Niryo Ned2 (ae)
 conveyor_id = robot.set_conveyor()  # Configurar la cinta transportadora
 
-# Variable global para almacenar el estado de la cinta
-cinta_encendida = False
-
 def encender_cinta():
     """Encender la cinta transportadora si no está encendida."""    
     robot.run_conveyor(conveyor_id, speed=100, direction=ConveyorDirection.BACKWARD)
