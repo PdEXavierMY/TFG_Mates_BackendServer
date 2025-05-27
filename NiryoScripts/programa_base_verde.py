@@ -4,6 +4,8 @@ import numpy as np
 from pyniryo import uncompress_image
 from pyniryo.vision import threshold_hsv, ColorHSV, show_img, show_img_and_wait_close
 import time
+from datetime import datetime
+from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
 
 # Conectar al robot
 robot = NiryoRobot("192.168.217.107")  # Cambia esta IP por la del robot Niryo Ned2 (ae)
@@ -67,7 +69,7 @@ def detectar_pieza(robot):
     else:
         return None
 
-def ejecutar():
+'''def ejecutar():
     """Ejecutar el flujo completo del programa."""
     apagar_cinta()  # Apagar la cinta al inicio
     robot.clear_collision_detected()  # Limpiar colisiones detectadas
@@ -135,7 +137,114 @@ def ejecutar():
         except Exception as e:
             print(f"Error durante la detección: {e}")
 
-        time.sleep(1.5)
+        time.sleep(1.5)'''
+
+def ejecutar():
+    """Ejecutar el flujo completo del programa (base verde)."""
+    inicio = time.time()
+    resultado = "Éxito"
+    errores = 0
+
+    try:
+        apagar_cinta()
+        robot.clear_collision_detected()
+        robot.calibrate_auto()
+        robot.move(neutral_pose)
+        robot.release_with_tool()
+        robot.move(pick_pose_arriba)
+        robot.move(pick_pose)
+        robot.grasp_with_tool()
+        robot.move(pick_pose_arriba)
+        robot.move(place_pose)
+        robot.release_with_tool()
+        robot.move(pick_pose_arriba)
+        robot.move(neutral_pose)
+        robot.move(observer_pose)
+        time.sleep(1)
+        encender_cinta()
+
+        print("Cinta encendida. Observando...")
+
+        while True:
+            try:
+                color = detectar_pieza(robot)
+
+                if color:
+                    print(f"Pieza {color} detectada.")
+                    time.sleep(1)
+                    apagar_cinta()
+
+                    if color == 'verde':
+                        print("Es verde: dejarla pasar por 5 segundos.")
+                        time.sleep(2)
+                        encender_cinta()
+                        time.sleep(5)
+                        apagar_cinta()
+                        print("Fin del proceso con pieza verde.")
+                        break
+
+                    else:
+                        print(f"Es {color}: proceder a recoger y colocar.")
+                        robot.clear_collision_detected()
+                        robot.move(observer_worspace_pose)
+
+                        obj_found, shape, detected_color = robot.vision_pick("color_pick2")
+
+                        if obj_found and shape:
+                            print(f"Pieza detectada")
+                            robot.move(place_pose_cinta_arriba)
+                            robot.move(place_pose_cinta)
+                            robot.place(place_pose_cinta)
+                            print("Pieza colocada correctamente.")
+                            robot.move(place_pose_cinta_arriba)
+                            robot.move(neutral_pose)
+                        else:
+                            raise Exception("No se pudo detectar ninguna pieza para agarrar.")
+
+                        break
+                else:
+                    print("Aún sin pieza detectada...")
+
+                time.sleep(1.5)
+
+            except Exception as e:
+                resultado = "Fallo"
+                errores = 1
+                ahora = datetime.now()
+                registrar_error(
+                    fecha=ahora.strftime("%d/%m/%Y"),
+                    hora=ahora.strftime("%H:%M"),
+                    codigo="E003",
+                    descripcion=str(e),
+                    programa="programa_base_verde"
+                )
+                print(f"Error durante la detección registrado: {e}")
+                break
+
+    except Exception as e:
+        resultado = "Fallo"
+        errores = 1
+        ahora = datetime.now()
+        registrar_error(
+            fecha=ahora.strftime("%d/%m/%Y"),
+            hora=ahora.strftime("%H:%M"),
+            codigo="E002",
+            descripcion=str(e),
+            programa="programa_base_verde"
+        )
+        print(f"Error inicial registrado: {e}")
+
+    finally:
+        duracion = int(time.time() - inicio)
+        ahora = datetime.now()
+        registrar_historial(
+            fecha=ahora.strftime("%d/%m/%Y"),
+            hora=ahora.strftime("%H:%M"),
+            programa="programa_base_verde",
+            duracion=duracion,
+            resultado=resultado,
+            errores=errores
+        )
 
 
 if __name__ == "__main__":
