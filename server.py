@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 import subprocess
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import time
 import signal
+from bbdd_robot.csv_handler import guardar_tiempos_en_csv, procesar_csv_tiempos
 
 app = Flask(__name__)
 
@@ -18,6 +19,14 @@ script_actual = None
 script_start_time = None
 script_process = None  # Proceso externo en ejecución
 
+tiempo_total_activo = timedelta()
+tiempo_total_inactivo = timedelta()
+ultimo_cambio_estado = datetime.now()
+estado_robot = 'inactivo'
+ultima_fecha = datetime.now().date()
+
+log_lock = threading.Lock()  # Nuevo: para sincronizar acceso a log
+
 def comprobar_conexion():
     script_path = os.path.join(SCRIPTS_DIR, 'comprobar_conexion_robot.py')
     try:
@@ -26,6 +35,29 @@ def comprobar_conexion():
         return salida == "ok"
     except Exception:
         return False
+    
+def actualizar_tiempos():
+    global tiempo_total_activo, tiempo_total_inactivo, ultimo_cambio_estado, estado_robot, ultima_fecha
+
+    ahora = datetime.now()
+    hoy = ahora.date()
+
+    if estado_robot == 'activo':
+        tiempo_total_activo += ahora - ultimo_cambio_estado
+    else:
+        tiempo_total_inactivo += ahora - ultimo_cambio_estado
+
+    if hoy != ultima_fecha:
+        guardar_tiempos_en_csv(
+            ultima_fecha,
+            tiempo_total_activo.total_seconds() / 60,
+            tiempo_total_inactivo.total_seconds() / 60
+        )
+        tiempo_total_activo = timedelta()
+        tiempo_total_inactivo = timedelta()
+        ultima_fecha = hoy
+
+    ultimo_cambio_estado = ahora
 
 def ejecutar_en_bucle(nombre_script):
     global stop_event, script_actual, script_start_time, script_process
@@ -83,7 +115,7 @@ def ejecutar_en_bucle(nombre_script):
 
 @app.route('/ejecutar', methods=['POST'])
 def ejecutar_script():
-    global script_thread, stop_event, last_script, script_actual, script_start_time
+    global script_thread, stop_event, last_script, script_actual, script_start_time, estado_robot
 
     data = request.get_json()
     if not data or 'programa' not in data:
@@ -91,24 +123,26 @@ def ejecutar_script():
 
     nombre_script = data['programa']
 
-    # Si ya hay un script ejecutándose
     if script_thread and script_thread.is_alive():
         if script_actual == nombre_script:
-            # Mismo script ya corriendo
             return jsonify({'status': 'ok', 'mensaje': f'El script "{nombre_script}" ya está ejecutándose'})
         else:
-            # Parar el script actual antes de lanzar el nuevo
             stop_event.set()
             script_thread.join(timeout=10)
+            estado_robot = 'inactivo'
+            actualizar_tiempos()
 
-    # Lanzar nuevo script
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado o inaccesible'}), 503
-    
+
     stop_event.clear()
     last_script = nombre_script
     script_actual = nombre_script
     script_start_time = datetime.now()
+
+    estado_robot = 'activo'
+    actualizar_tiempos()
+
     script_thread = threading.Thread(target=ejecutar_en_bucle, args=(nombre_script,))
     script_thread.start()
 
@@ -116,7 +150,7 @@ def ejecutar_script():
 
 @app.route('/parar', methods=['POST'])
 def parar_script():
-    global stop_event, script_thread, script_actual, script_start_time, script_process
+    global stop_event, script_thread, script_actual, script_start_time, script_process, estado_robot
 
     if script_thread and script_thread.is_alive():
         stop_event.set()
@@ -128,15 +162,20 @@ def parar_script():
             script_process.wait(timeout=5)
 
         script_thread.join(timeout=10)
+
+        estado_robot = 'inactivo'
+        actualizar_tiempos()
+
         script_actual = None
         script_start_time = None
+
         return jsonify({'status': 'ok', 'mensaje': 'Ejecución detenida'})
     else:
         return jsonify({'status': 'error', 'mensaje': 'No hay ningún script en ejecución'}), 404
 
 @app.route('/restart', methods=['POST'])
 def reiniciar_robot():
-    global stop_event, script_thread, script_actual, script_process
+    global stop_event, script_thread, script_actual, script_process, estado_robot
 
     nombre_script = "robot_restart"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
@@ -150,6 +189,10 @@ def reiniciar_robot():
                 script_process.send_signal(signal.SIGINT)
             script_process.wait(timeout=5)
         script_thread.join(timeout=10)
+
+        estado_robot = 'inactivo'
+        actualizar_tiempos()
+
         script_actual = None
 
     if not comprobar_conexion():
@@ -171,10 +214,10 @@ def reiniciar_robot():
             'mensaje': f'Error al ejecutar "robot_restart": {e.stderr.strip()}',
             'codigo': e.returncode
         }), 500
-
+    
 @app.route('/calibrar', methods=['POST'])
 def calibrar_robot():
-    global stop_event, script_thread, script_actual, script_process
+    global stop_event, script_thread, script_actual, script_process, estado_robot
 
     nombre_script = "calibrar_robot"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
@@ -188,6 +231,10 @@ def calibrar_robot():
                 script_process.send_signal(signal.SIGINT)
             script_process.wait(timeout=5)
         script_thread.join(timeout=10)
+
+        estado_robot = 'inactivo'
+        actualizar_tiempos()
+
         script_actual = None
 
     if not comprobar_conexion():
@@ -217,15 +264,27 @@ def get_latest_logs():
     if not os.path.exists(LOG_FILE):
         return jsonify({"log": ""})
 
-    with open(LOG_FILE, 'r') as f:
-        f.seek(LAST_POSITION)
-        new_data = f.read()
-        if new_data:
-            LAST_POSITION = f.tell()
-            LAST_CONTENT = new_data
-            return jsonify({"log": new_data})
-        else:
-            return jsonify({"log": False})
+    with log_lock:
+        try:
+            with open(LOG_FILE, 'r', encoding='utf-8') as f:
+                f.seek(LAST_POSITION)
+                new_data = f.read()
+                if new_data:
+                    LAST_POSITION = f.tell()
+                    LAST_CONTENT = new_data
+                    return jsonify({"log": new_data})
+                else:
+                    return jsonify({"log": False})
+        except Exception:
+            # Fallback: Reiniciar lectura desde el principio
+            try:
+                with open(LOG_FILE, 'r', encoding='utf-8') as f:
+                    contenido = f.read()
+                    LAST_POSITION = f.tell()
+                    LAST_CONTENT = contenido
+                    return jsonify({"log": contenido})
+            except Exception as fallback_error:
+                return jsonify({"log": "", "error": str(fallback_error)}), 500
 
 '''@app.route('/status', methods=['GET'])
 def estado_script():
@@ -246,4 +305,5 @@ def estado_script():
         })'''
 
 if __name__ == '__main__':
+    procesar_csv_tiempos()
     app.run(host='0.0.0.0', port=5000)
