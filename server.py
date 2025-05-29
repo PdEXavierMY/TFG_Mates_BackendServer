@@ -1,13 +1,21 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
+import io
 import subprocess
 import os
 from datetime import datetime, timedelta
 import threading
 import time
 import signal
+from bbdd_robot.bbdd_functions import registrar_historial
 from bbdd_robot.csv_handler import guardar_tiempos_en_csv, procesar_csv_tiempos
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
+CORS(app)
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), 'NiryoScripts')
 python_cmd = r'C:\Users\j.miguelez.yague\Documents\GitHub\TFG_Mates_BackendServer\venv\Scripts\python.exe'
@@ -166,6 +174,22 @@ def parar_script():
         estado_robot = 'inactivo'
         actualizar_tiempos()
 
+        # Calcular duración si se conoce el inicio
+        duracion = 0
+        if script_start_time:
+            duracion = int(time.time() - script_start_time)
+
+        # Registrar historial
+        ahora = datetime.now()
+        registrar_historial(
+            fecha=ahora.strftime("%d/%m/%Y"),
+            hora=ahora.strftime("%H:%M"),
+            programa=script_actual if script_actual else "desconocido",
+            duracion=duracion,
+            resultado="Parado",
+            errores=0
+        )
+
         script_actual = None
         script_start_time = None
 
@@ -303,6 +327,123 @@ def estado_script():
             'script': None,
             'inicio': None
         })'''
+
+@app.route('/imagen_ejecuciones_programa')
+def imagen_ejecuciones_programa():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    if not os.path.exists(archivo):
+        return jsonify({'error': 'Archivo no encontrado'}), 404
+
+    df = pd.read_excel(archivo, sheet_name='Historial Programas')
+    conteo = df['Programa'].value_counts()
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    conteo.plot(kind='bar', ax=ax, color='#4CAF50')
+    ax.set_title('Número de ejecuciones por programa')
+    ax.set_xlabel('Programa')
+    ax.set_ylabel('Nº de ejecuciones')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
+
+@app.route('/imagen_tiempo_medio_programa')
+def imagen_tiempo_medio_programa():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    df = pd.read_excel(archivo, sheet_name='Historial Programas')
+    df_grouped = df.groupby('Programa')['Duración (s)'].mean()
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    df_grouped.plot(kind='line', marker='o', ax=ax, color='orange')
+    ax.set_title('Tiempo medio por programa')
+    ax.set_xlabel('Programa')
+    ax.set_ylabel('Duración media (s)')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
+
+@app.route('/imagen_proporcion_activo_inactivo')
+def imagen_proporcion_activo_inactivo():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    df = pd.read_excel(archivo, sheet_name='Tiempo Activo Inactivo')
+    df_sum = df[['Tiempo Activo (min)', 'Tiempo Inactivo (min)']].sum()
+
+    fig, ax = plt.subplots()
+    df_sum.plot(kind='pie', labels=['Activo', 'Inactivo'], autopct='%1.1f%%', ax=ax, colors=['#66BB6A', '#EF5350'])
+    ax.set_ylabel('')
+    ax.set_title('Proporción de tiempo activo/inactivo')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
+
+@app.route('/imagen_errores_por_tipo')
+def imagen_errores_por_tipo():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    df = pd.read_excel(archivo, sheet_name='Logs de Errores')
+    conteo = df['Código Error'].value_counts()
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    conteo.plot(kind='bar', ax=ax, color='#FF7043')
+    ax.set_title('Errores por tipo/código')
+    ax.set_xlabel('Código de error')
+    ax.set_ylabel('Cantidad')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
+
+@app.route('/imagen_errores_por_programa')
+def imagen_errores_por_programa():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    df = pd.read_excel(archivo, sheet_name='Logs de Errores')
+    df_grouped = df.groupby(['Programa Relacionado', 'Código Error']).size().unstack(fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    df_grouped.plot(kind='bar', ax=ax)
+    ax.set_title('Frecuencia de errores por programa')
+    ax.set_xlabel('Programa')
+    ax.set_ylabel('Nº de errores')
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
+
+@app.route('/imagen_tiempo_activo_diario')
+def imagen_tiempo_activo_diario():
+    archivo = 'bbdd_robot/simulacion_datos_robot.xlsx'
+    df = pd.read_excel(archivo, sheet_name='Tiempo Activo Inactivo')
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y')
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(df['Fecha'], df['Tiempo Activo (min)'], marker='o', color='#42A5F5')
+    ax.set_title('Evolución del tiempo activo diario')
+    ax.set_xlabel('Fecha')
+    ax.set_ylabel('Tiempo activo (s)')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close(fig)
+    return send_file(img, mimetype='image/png')
 
 if __name__ == '__main__':
     procesar_csv_tiempos()
