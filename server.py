@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, Response, request, jsonify, send_file
 from flask_cors import CORS
 import io
 import subprocess
@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import threading
 import time
 import signal
+from NiryoScripts.stream_image import generate_frames
 from bbdd_robot.bbdd_functions import registrar_historial
 from bbdd_robot.csv_handler import guardar_tiempos_en_csv, procesar_csv_tiempos
 import pandas as pd
@@ -121,6 +122,8 @@ def ejecutar_en_bucle(nombre_script):
     script_start_time = None
     script_process = None
 
+#SCRIPTS
+
 @app.route('/ejecutar', methods=['POST'])
 def ejecutar_script():
     global script_thread, stop_event, last_script, script_actual, script_start_time, estado_robot
@@ -184,7 +187,7 @@ def parar_script():
         registrar_historial(
             fecha=ahora.strftime("%d/%m/%Y"),
             hora=ahora.strftime("%H:%M"),
-            programa=script_actual if script_actual else "desconocido",
+            programa="parar_robot",
             duracion=duracion,
             resultado="Parado",
             errores=0
@@ -276,6 +279,10 @@ def calibrar_robot():
             'mensaje': f'Error durante calibración: {e.stderr.strip()}',
             'codigo': e.returncode
         }), 500
+    
+#GEMELO DIGITAL
+    
+# LOGS Y VIDEO
 
 LOG_FILE = 'log.txt'
 LAST_POSITION = 0
@@ -309,6 +316,71 @@ def get_latest_logs():
                     return jsonify({"log": contenido})
             except Exception as fallback_error:
                 return jsonify({"log": "", "error": str(fallback_error)}), 500
+            
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(stop_event),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stream', methods=['POST'])
+def iniciar_stream():
+    global script_thread, stop_event, script_actual, estado_robot
+
+    if script_thread and script_thread.is_alive():
+        stop_event.set()
+        script_thread.join()
+        actualizar_tiempos()
+        script_actual = None
+        estado_robot = 'inactivo'
+
+    if not comprobar_conexion():
+        return jsonify({'status': 'error', 'mensaje': 'Robot no conectado'}), 503
+
+    def control_stream():
+        from datetime import datetime
+        from bbdd_robot.bbdd_functions import registrar_historial, registrar_error, actualizar_tiempos
+
+        resultado = "Éxito"
+        errores = 0
+        inicio = time.time()
+
+        ahora = datetime.now()
+        fecha = ahora.strftime("%d/%m/%Y")
+        hora = ahora.strftime("%H:%M")
+
+        try:
+            while not stop_event.is_set():
+                time.sleep(1)  # no hacemos nada, solo mantenemos el hilo activo
+        except Exception as e:
+            resultado = "Fallo"
+            errores = 1
+            registrar_error(fecha, hora, "E008", str(e), "stream_image")
+        finally:
+            duracion = int(time.time() - inicio)
+            registrar_historial(fecha, hora, "stream_image", duracion, resultado, errores)
+            actualizar_tiempos()
+
+    stop_event.clear()
+    script_thread = threading.Thread(target=control_stream)
+    script_thread.start()
+    script_actual = "stream_image"
+    estado_robot = 'activo'
+
+    return jsonify({'status': 'ok', 'mensaje': 'Stream iniciado'})
+
+@app.route('/parar', methods=['POST'])
+def parar_script():
+    global script_thread, stop_event, script_actual, estado_robot
+
+    if script_thread and script_thread.is_alive():
+        stop_event.set()
+        script_thread.join(timeout=10)
+        actualizar_tiempos()
+        script_actual = None
+        estado_robot = 'inactivo'
+        return jsonify({'status': 'ok', 'mensaje': 'Stream detenido correctamente'})
+
+    return jsonify({'status': 'ok', 'mensaje': 'No había ningún proceso activo'})
 
 '''@app.route('/status', methods=['GET'])
 def estado_script():
@@ -327,6 +399,8 @@ def estado_script():
             'script': None,
             'inicio': None
         })'''
+
+#DASHBOARD
 
 @app.route('/imagen_ejecuciones_programa')
 def imagen_ejecuciones_programa():
