@@ -368,7 +368,7 @@ def iniciar_stream():
 
     return jsonify({'status': 'ok', 'mensaje': 'Stream iniciado'})
 
-@app.route('/parar', methods=['POST'])
+@app.route('/parar_stream', methods=['POST'])
 def parar_script():
     global script_thread, stop_event, script_actual, estado_robot
 
