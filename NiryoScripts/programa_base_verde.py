@@ -6,6 +6,7 @@ from pyniryo.vision import threshold_hsv, ColorHSV, show_img, show_img_and_wait_
 import time
 from datetime import datetime
 from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
+from GemeloDigital.dt_helper import reportar_error_estado
 
 # Conectar al robot
 robot = NiryoRobot("192.168.217.107")  # Cambia esta IP por la del robot Niryo Ned2 (ae)
@@ -233,6 +234,7 @@ def ejecutar():
             programa="programa_base_verde"
         )
         print(f"Error inicial registrado: {e}")
+        reportar_error_estado()
 
     finally:
         duracion = int(time.time() - inicio)

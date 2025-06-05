@@ -6,6 +6,7 @@ from pyniryo.vision import threshold_hsv, ColorHSV, show_img, show_img_and_wait_
 import time
 from datetime import datetime
 from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
+from GemeloDigital.dt_helper import reportar_error_estado
 
 def ejecutar():
     """Reiniciar el robot: detener cinta, abrir garra y volver a posición neutral."""
@@ -41,6 +42,7 @@ def ejecutar():
             programa="restart"
         )
         print(f"Error al reiniciar el robot: {e}")
+        reportar_error_estado()
 
     finally:
         duracion = int(time.time() - inicio)

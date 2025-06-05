@@ -6,6 +6,7 @@ from pyniryo.vision import threshold_hsv, ColorHSV, show_img, show_img_and_wait_
 import time
 from datetime import datetime
 from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
+from GemeloDigital.dt_helper import reportar_error_estado
 
 # Se asume que ya tienes estas funciones definidas en otro módulo o archivo:
 # from helpers import registrar_error, registrar_historial
@@ -39,6 +40,7 @@ def ejecutar():
             programa="calibrar_robot"
         )
         print(f"Error durante calibración: {e}")
+        reportar_error_estado()
 
     finally:
         duracion = int(time.time() - inicio)

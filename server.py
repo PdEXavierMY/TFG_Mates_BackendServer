@@ -14,6 +14,8 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from GemeloDigital.dt_helper import get_access_token, put_twin_data, avisar_advertencia
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -157,6 +159,14 @@ def ejecutar_script():
     script_thread = threading.Thread(target=ejecutar_en_bucle, args=(nombre_script,))
     script_thread.start()
 
+    # PUT al Twin: ejecutando nuevo script
+    token = get_access_token()
+    if token:
+        put_twin_data("Twin/RobotArm", {
+            "funcionando": True,
+            "programa": nombre_script
+        }, token)
+
     return jsonify({'status': 'ok', 'mensaje': f'Script "{nombre_script}" iniciado en bucle'})
 
 @app.route('/parar', methods=['POST'])
@@ -193,6 +203,14 @@ def parar_script():
             errores=0
         )
 
+        # PUT al Twin: detener robot
+        token = get_access_token()
+        if token:
+            put_twin_data("Twin/RobotArm", {
+                "funcionando": False,
+                "programa": "None"
+            }, token)
+
         script_actual = None
         script_start_time = None
 
@@ -207,6 +225,7 @@ def reiniciar_robot():
     nombre_script = "robot_restart"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
 
+    # Detener proceso/hilo actual si está activo
     if script_thread and script_thread.is_alive():
         stop_event.set()
         if script_process and script_process.poll() is None:
@@ -219,23 +238,37 @@ def reiniciar_robot():
 
         estado_robot = 'inactivo'
         actualizar_tiempos()
-
         script_actual = None
 
+    # Comprobar conexión al robot
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado o inaccesible'}), 503
 
+    # Comprobar si el script existe
     if not os.path.isfile(script_path):
         return jsonify({'status': 'error', 'mensaje': 'Script "robot_restart" no encontrado'}), 404
 
+    # Ejecutar el script
     try:
         resultado = subprocess.run([python_cmd, script_path], capture_output=True, text=True, check=True)
+
+        # PUT al Twin con funcionando: false y programa: robot_restart
+        token = get_access_token()
+        if token:
+            put_twin_data("Twin/RobotArm", {
+                "funcionando": False,
+                "programa": "robot_restart"
+            }, token)
+
         return jsonify({
             'status': 'ok',
             'mensaje': 'Script "robot_restart" ejecutado correctamente',
             'salida': resultado.stdout.strip()
         })
+
     except subprocess.CalledProcessError as e:
+        # En caso de error, estado: Advertencia
+        avisar_advertencia()
         return jsonify({
             'status': 'error',
             'mensaje': f'Error al ejecutar "robot_restart": {e.stderr.strip()}',
@@ -249,6 +282,7 @@ def calibrar_robot():
     nombre_script = "calibrar_robot"
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
 
+    # Si hay un hilo activo, detenerlo
     if script_thread and script_thread.is_alive():
         stop_event.set()
         if script_process and script_process.poll() is None:
@@ -261,26 +295,38 @@ def calibrar_robot():
 
         estado_robot = 'inactivo'
         actualizar_tiempos()
-
         script_actual = None
 
+    # Verificar conexión al robot
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado o inaccesible'}), 503
 
+    # Verificar existencia del script
     if not os.path.isfile(script_path):
         return jsonify({'status': 'error', 'mensaje': 'Script de calibración no encontrado'}), 404
 
+    # Ejecutar script
     try:
         resultado = subprocess.run([python_cmd, script_path], capture_output=True, text=True, check=True)
+
+        # PUT al gemelo digital: funcionando=True, programa="calibrar_robot"
+        token = get_access_token()
+        if token:
+            put_twin_data("Twin/RobotArm", {
+                "funcionando": True,
+                "programa": "calibrar_robot"
+            }, token)
+
         return jsonify({'status': 'ok', 'mensaje': 'Calibración ejecutada correctamente'})
+
     except subprocess.CalledProcessError as e:
+        # En caso de error, avisar al Twin
+        avisar_advertencia()
         return jsonify({
             'status': 'error',
             'mensaje': f'Error durante calibración: {e.stderr.strip()}',
             'codigo': e.returncode
         }), 500
-    
-#GEMELO DIGITAL
     
 # LOGS Y VIDEO
 
@@ -326,6 +372,18 @@ def video_feed():
 def iniciar_stream():
     global script_thread, stop_event, script_actual, estado_robot
 
+    # --- PUT inicial al Digital Twin ---
+    token = get_access_token()
+    if token:
+        twin_update = {
+            "funcionando": True,
+            "programa": "stream_image"
+        }
+        put_twin_data("Twin/RobotArm", twin_update, token)
+    else:
+        print("No se pudo obtener token para actualizar el Twin")
+
+    # --- Si ya había un hilo en ejecución, lo detenemos ---
     if script_thread and script_thread.is_alive():
         stop_event.set()
         script_thread.join()
@@ -355,6 +413,9 @@ def iniciar_stream():
             resultado = "Fallo"
             errores = 1
             registrar_error(fecha, hora, "E008", str(e), "stream_image")
+
+            # --- PUT de Advertencia en caso de error ---
+            avisar_advertencia()
         finally:
             duracion = int(time.time() - inicio)
             registrar_historial(fecha, hora, "stream_image", duracion, resultado, errores)
@@ -371,6 +432,17 @@ def iniciar_stream():
 @app.route('/parar_stream', methods=['POST'])
 def parar_script():
     global script_thread, stop_event, script_actual, estado_robot
+
+    # --- PUT inicial al Digital Twin ---
+    token = get_access_token()
+    if token:
+        twin_update = {
+            "funcionando": False,
+            "programa": "None"
+        }
+        put_twin_data("Twin/RobotArm", twin_update, token)
+    else:
+        print("No se pudo obtener token para actualizar el Twin")
 
     if script_thread and script_thread.is_alive():
         stop_event.set()
