@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pyniryo import *
 import cv2
 import numpy as np
@@ -15,7 +18,8 @@ def ejecutar():
     errores = 0
 
     try:
-        robot = NiryoRobot("192.168.217.107")  # Cambia la IP si es necesario
+        robot = NiryoRobot("192.168.32.107")  # Cambia la IP si es necesario
+        robot.clear_collision_detected()
         conveyor_id = robot.set_conveyor()
 
         # The neutral pose

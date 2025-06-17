@@ -1,21 +1,21 @@
+import sys
+import os
 from flask import Flask, Response, request, jsonify, send_file
 from flask_cors import CORS
 import io
 import subprocess
-import os
 from datetime import datetime, timedelta
 import threading
 import time
 import signal
 from NiryoScripts.stream_image import generate_frames
-from bbdd_robot.bbdd_functions import registrar_historial
+from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
 from bbdd_robot.csv_handler import guardar_tiempos_en_csv, procesar_csv_tiempos
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from GemeloDigital.dt_helper import get_access_token, put_twin_data, avisar_advertencia
-import os
 
 app = Flask(__name__)
 CORS(app)
@@ -42,9 +42,12 @@ def comprobar_conexion():
     script_path = os.path.join(SCRIPTS_DIR, 'comprobar_conexion_robot.py')
     try:
         resultado = subprocess.run([python_cmd, script_path], capture_output=True, text=True, timeout=5)
+        print("STDOUT:", resultado.stdout)
+        print("STDERR:", resultado.stderr)
         salida = resultado.stdout.strip()
         return salida == "ok"
-    except Exception:
+    except Exception as e:
+        print("Exception:", e)
         return False
     
 def actualizar_tiempos():
@@ -70,6 +73,30 @@ def actualizar_tiempos():
 
     ultimo_cambio_estado = ahora
 
+def detener_script_actual():
+    global script_thread, stop_event, script_actual, script_process, estado_robot
+
+    if script_thread and script_thread.is_alive():
+        stop_event.set()
+
+        # Si hay proceso externo asociado, intenta matarlo
+        if script_process and script_process.poll() is None:
+            if os.name == 'nt':
+                script_process.terminate()
+            else:
+                script_process.send_signal(signal.SIGINT)
+            try:
+                script_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                script_process.kill()
+
+        script_thread.join(timeout=10)
+
+    script_thread = None
+    script_process = None
+    script_actual = None
+    estado_robot = 'inactivo'
+
 def ejecutar_en_bucle(nombre_script):
     global stop_event, script_actual, script_start_time, script_process
     script_path = os.path.join(SCRIPTS_DIR, f'{nombre_script}.py')
@@ -84,6 +111,7 @@ def ejecutar_en_bucle(nombre_script):
         try:
             # Lanzar proceso y guardarlo
             script_process = subprocess.Popen([python_cmd, script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            print(f"[DEBUG] Entrando en ejecutar_en_bucle con: {nombre_script}")
 
             # Esperar a que termine o a que se pida stop
             while True:
@@ -158,6 +186,7 @@ def ejecutar_script():
 
     script_thread = threading.Thread(target=ejecutar_en_bucle, args=(nombre_script,))
     script_thread.start()
+    print(f"[DEBUG] Hilo lanzado para: {nombre_script}")
 
     # PUT al Twin: ejecutando nuevo script
     token = get_access_token()
@@ -372,32 +401,20 @@ def video_feed():
 def iniciar_stream():
     global script_thread, stop_event, script_actual, estado_robot
 
-    # --- PUT inicial al Digital Twin ---
+    # PUT inicial al Digital Twin
     token = get_access_token()
     if token:
-        twin_update = {
+        put_twin_data("Twin/RobotArm", {
             "funcionando": True,
             "programa": "stream_image"
-        }
-        put_twin_data("Twin/RobotArm", twin_update, token)
-    else:
-        print("No se pudo obtener token para actualizar el Twin")
+        }, token)
 
-    # --- Si ya había un hilo en ejecución, lo detenemos ---
-    if script_thread and script_thread.is_alive():
-        stop_event.set()
-        script_thread.join()
-        actualizar_tiempos()
-        script_actual = None
-        estado_robot = 'inactivo'
+    detener_script_actual()  # 🔁 Limpieza antes de arrancar
 
     if not comprobar_conexion():
         return jsonify({'status': 'error', 'mensaje': 'Robot no conectado'}), 503
 
     def control_stream():
-        from datetime import datetime
-        from bbdd_robot.bbdd_functions import registrar_historial, registrar_error, actualizar_tiempos
-
         resultado = "Éxito"
         errores = 0
         inicio = time.time()
@@ -408,13 +425,11 @@ def iniciar_stream():
 
         try:
             while not stop_event.is_set():
-                time.sleep(1)  # no hacemos nada, solo mantenemos el hilo activo
+                time.sleep(1)
         except Exception as e:
             resultado = "Fallo"
             errores = 1
             registrar_error(fecha, hora, "E008", str(e), "stream_image")
-
-            # --- PUT de Advertencia en caso de error ---
             avisar_advertencia()
         finally:
             duracion = int(time.time() - inicio)
@@ -430,8 +445,26 @@ def iniciar_stream():
     return jsonify({'status': 'ok', 'mensaje': 'Stream iniciado'})
 
 @app.route('/parar_stream', methods=['POST'])
-def parar_script():
-    global script_thread, stop_event, script_actual, estado_robot
+def parar_stream():
+    global stop_event
+
+    # PUT final al Digital Twin
+    token = get_access_token()
+    if token:
+        put_twin_data("Twin/RobotArm", {
+            "funcionando": False,
+            "programa": "None"
+        }, token)
+
+    detener_script_actual()  # 💥 Mata todo (igual que el botón "Parar")
+
+    actualizar_tiempos()
+
+    return jsonify({'status': 'ok', 'mensaje': 'Stream detenido correctamente'})
+
+'''@app.route('/parar_stream', methods=['POST'])
+def parar_stream():
+    global script_thread, stop_event, script_actual, estado_robot, script_process
 
     # --- PUT inicial al Digital Twin ---
     token = get_access_token()
@@ -446,13 +479,33 @@ def parar_script():
 
     if script_thread and script_thread.is_alive():
         stop_event.set()
+
+        # Si hay un proceso en ejecución, terminarlo también
+        if script_process and script_process.poll() is None:
+            if os.name == 'nt':
+                script_process.terminate()
+            else:
+                import signal
+                script_process.send_signal(signal.SIGINT)
+            try:
+                script_process.wait(timeout=5)
+            except Exception:
+                script_process.kill()  # por si no termina, forzamos
+
+        # Esperar que el hilo termine
         script_thread.join(timeout=10)
-        actualizar_tiempos()
+
+        # Limpiar referencias globales para liberar memoria y desconectar robot
+        script_thread = None
+        script_process = None
         script_actual = None
         estado_robot = 'inactivo'
+
+        actualizar_tiempos()
+
         return jsonify({'status': 'ok', 'mensaje': 'Stream detenido correctamente'})
 
-    return jsonify({'status': 'ok', 'mensaje': 'No había ningún proceso activo'})
+    return jsonify({'status': 'ok', 'mensaje': 'No había ningún proceso activo'})'''
 
 '''@app.route('/status', methods=['GET'])
 def estado_script():

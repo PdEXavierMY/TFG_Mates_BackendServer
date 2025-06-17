@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pyniryo import *
 import cv2
 import numpy as np
@@ -9,8 +12,9 @@ from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
 from GemeloDigital.dt_helper import reportar_error_estado
 
 # Conectar al robot
-robot = NiryoRobot("192.168.217.107")  # Cambia esta IP por la del robot Niryo Ned2 (ae)
+robot = NiryoRobot("192.168.32.107")  # Cambia esta IP por la del robot Niryo Ned2 (ae)
 conveyor_id = robot.set_conveyor()  # Configurar la cinta transportadora
+workspace = "TFGMatesFinal"
 
 def encender_cinta():
     """Encender la cinta transportadora si no está encendida."""    
@@ -32,7 +36,7 @@ neutral_pose = JointsPosition(-0.001,0.4999,-1.251,0,-0.006,-0.001)
 # The observer pose
 #observer_pose = JointsPosition(0.062,-0.160,-0.578,-0.006,-1.267,0.180)
 observer_pose = JointsPosition(0.077,-0.046,-0.904,0.117,-0.750,-0.101)
-observer_worspace_pose = JointsPosition(0.062,0.563,-0.634,0.000,-1.448,-0.049)
+observer_worspace_pose = JointsPosition(0.129,0.462,-0.514,0.008,-1.592,-0.205)
 
 pick_pose = JointsPosition(-1.062,-0.613,0.055,-0.216,-1.289,-1.020)
 pick_pose_arriba = JointsPosition(-1.083,-0.257,0.010,-0.020,-1.246,-1.129)
@@ -189,7 +193,7 @@ def ejecutar():
                         robot.clear_collision_detected()
                         robot.move(observer_worspace_pose)
 
-                        obj_found, shape, detected_color = robot.vision_pick("color_pick2")
+                        obj_found, shape, detected_color = robot.vision_pick(workspace)
 
                         if obj_found and shape:
                             print(f"Pieza detectada")

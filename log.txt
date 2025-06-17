@@ -1,0 +1,131 @@
+[2025-06-12 12:48:05.623645] Script ciclo: programa_base_rojo
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Pieza verde detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es verde: proceder a recoger y colocar.
+Pieza detectada
+Pieza colocada correctamente.
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+
+[2025-06-12 12:52:18.298355] Script ciclo: programa_base_rojo
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Pieza verde detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es verde: proceder a recoger y colocar.
+Error durante la detección registrado: No se pudo detectar ninguna pieza para agarrar.
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+
+[2025-06-12 12:53:09.114920] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 12:54:02.672729] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 13:00:35.238555] Script ciclo: programa_base_rojo
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Aún sin pieza detectada...
+Pieza verde detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es verde: proceder a recoger y colocar.
+Pieza detectada
+Pieza colocada correctamente.
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+
+[2025-06-12 13:00:38.347630] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+
+
+[2025-06-12 13:01:42.609394] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 13:27:39.390232] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 13:28:29.290217] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 13:29:26.335044] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-12 13:30:23.373880] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.32.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+

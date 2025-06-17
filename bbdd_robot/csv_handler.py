@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from bbdd_robot.bbdd_functions import registrar_tiempos_diarios
 
-TIEMPOS_CSV = "tiempos_diarios.csv"
+TIEMPOS_CSV = "bbdd_robot/tiempos_diarios.csv"
 
 def guardar_tiempos_en_csv(fecha, activo_minutos, inactivo_minutos):
     nuevos_datos = pd.DataFrame([{

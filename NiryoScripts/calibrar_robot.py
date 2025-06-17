@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pyniryo import *
 import cv2
 import numpy as np
@@ -18,7 +21,8 @@ def ejecutar():
     errores = 0
 
     try:
-        robot = NiryoRobot("192.168.217.107")  # Cambiar según IP real
+        robot = NiryoRobot("192.168.32.107")  # Cambiar según IP real
+        robot.clear_collision_detected()  # Limpiar colisiones detectadas
         robot.calibrate_auto()
         status = robot.get_hardware_status()
         print(status)
