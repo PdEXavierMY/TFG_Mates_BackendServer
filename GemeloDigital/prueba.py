@@ -1,5 +1,6 @@
 from dt_helper import get_access_token, get_twin_data, put_twin_data
 import os
+import time
 
 def main():
     try:
@@ -15,13 +16,17 @@ def main():
         print("Datos del Twin:")
         print(twin_data)
 
-          # 4. PUT del campo 'estado' con nuevo valor 'Advertencia'
-        nuevo_estado = {"estado": "Normal"}
+        time.sleep(15)  # Espera de 2 segundos
+
+          # 4. PUT del campo 'informes' con nuevo valor 3
+        nuevo_estado = {
+            "informes": 4
+        }
         resultado = put_twin_data(endpoint, nuevo_estado, token)
         if resultado:
-            print("Campo 'estado' actualizado a 'Advertencia'")
+            print("Información actualizada correctamente en 'informes'")
         else:
-            print("Falló la actualización de 'estado'")
+            print("Falló la actualización de 'informes'")
 
         # 5. Confirmar con un segundo GET
         twin_data_actualizado = get_twin_data(endpoint, token)

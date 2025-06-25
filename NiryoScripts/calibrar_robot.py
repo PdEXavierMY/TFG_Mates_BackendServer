@@ -11,6 +11,8 @@ from datetime import datetime
 from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
 from GemeloDigital.dt_helper import reportar_error_estado
 
+robot_ip = "192.168.183.107"
+
 # Se asume que ya tienes estas funciones definidas en otro módulo o archivo:
 # from helpers import registrar_error, registrar_historial
 
@@ -21,7 +23,7 @@ def ejecutar():
     errores = 0
 
     try:
-        robot = NiryoRobot("192.168.32.107")  # Cambiar según IP real
+        robot = NiryoRobot(robot_ip)  # Cambiar según IP real
         robot.clear_collision_detected()  # Limpiar colisiones detectadas
         robot.calibrate_auto()
         status = robot.get_hardware_status()

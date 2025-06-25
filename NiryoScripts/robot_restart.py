@@ -11,6 +11,8 @@ from datetime import datetime
 from bbdd_robot.bbdd_functions import registrar_historial, registrar_error
 from GemeloDigital.dt_helper import reportar_error_estado
 
+robot_ip = "192.168.183.107"
+
 def ejecutar():
     """Reiniciar el robot: detener cinta, abrir garra y volver a posición neutral."""
     inicio = time.time()
@@ -18,7 +20,7 @@ def ejecutar():
     errores = 0
 
     try:
-        robot = NiryoRobot("192.168.32.107")  # Cambia la IP si es necesario
+        robot = NiryoRobot(robot_ip)  # Cambia la IP si es necesario
         robot.clear_collision_detected()
         conveyor_id = robot.set_conveyor()
 

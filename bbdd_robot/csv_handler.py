@@ -24,7 +24,7 @@ def procesar_csv_tiempos():
     if not os.path.exists(TIEMPOS_CSV):
         return
 
-    hoy = datetime.now().date()
+    '''hoy = datetime.now().date()
     ayer = hoy - timedelta(days=1)
 
     df = pd.read_csv(TIEMPOS_CSV, parse_dates=['fecha'])
@@ -34,4 +34,4 @@ def procesar_csv_tiempos():
     if not df_ayer.empty:
         suma_activo = df_ayer['activo_minutos'].sum()
         suma_inactivo = df_ayer['inactivo_minutos'].sum()
-        registrar_tiempos_diarios(ayer, suma_activo, suma_inactivo)
+        registrar_tiempos_diarios(ayer, suma_activo, suma_inactivo)'''

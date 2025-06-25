@@ -129,3 +129,164 @@ Connected to server (192.168.32.107) on port 40001
 No new conveyor detected, returning last connected conveyor
 
 
+[2025-06-18 12:45:31.091148] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 12:46:21.508217] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 12:47:20.841076] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 12:48:29.255581] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 13:39:04.682307] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 13:41:24.739490] Script ciclo: programa_base_rojo
+Salida:
+Error inicial registrado: Command CONTROL_CONVEYOR KO : An error occured while executing the last command : Unable to retrieve the conveyor corresponding to ConveyorID.NONE
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No conveyor connected !
+Disconnected from robot
+
+
+[2025-06-18 13:41:29.892404] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No conveyor connected !
+
+
+[2025-06-18 13:41:39.221580] Script ciclo: programa_base_verde
+Salida:
+Error inicial registrado: Command CONTROL_CONVEYOR KO : An error occured while executing the last command : Unable to retrieve the conveyor corresponding to ConveyorID.NONE
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No conveyor connected !
+Disconnected from robot
+
+
+[2025-06-18 13:41:45.760935] Script ciclo: programa_base_verde
+Salida:
+Error inicial registrado: Command CONTROL_CONVEYOR KO : An error occured while executing the last command : Unable to retrieve the conveyor corresponding to ConveyorID.NONE
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No conveyor connected !
+Disconnected from robot
+
+
+[2025-06-18 13:43:50.458020] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 13:44:45.841812] Script ciclo: programa_base_rojo
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Pieza verde detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es verde: proceder a recoger y colocar.
+Error durante la detección registrado: No se pudo detectar ninguna pieza para agarrar.
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+
+[2025-06-18 13:44:51.002742] Script ciclo: programa_base_rojo
+Salida:
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+
+
+[2025-06-18 13:45:27.725953] Script ciclo: programa_base_verde
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Pieza rojo detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es rojo: proceder a recoger y colocar.
+Error durante la detección registrado: No se pudo detectar ninguna pieza para agarrar.
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+
+[2025-06-18 13:45:30.474480] Script ciclo: programa_base_verde
+Salida:
+
+Errores:
+
+
+[2025-06-18 13:46:13.033323] Script ciclo: programa_base_rojo
+Salida:
+Cinta transportadora apagada
+La cinta ya está apagada
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta encendida. Observando...
+Pieza rojo detectada.
+Cinta transportadora apagada
+La cinta ya está apagada
+Es roja: dejarla pasar por 5 segundos.
+Cinta transportadora encendida
+La cinta ya está encendida
+Cinta transportadora apagada
+La cinta ya está apagada
+Fin del proceso con pieza roja.
+
+Errores:
+Connected to server (192.168.183.107) on port 40001
+No new conveyor detected, returning last connected conveyor
+Disconnected from robot
+
+

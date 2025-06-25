@@ -6,7 +6,7 @@ import cv2
 import time
 from GemeloDigital.dt_helper import reportar_error_estado
 
-robot_ip = "192.168.32.107"
+robot_ip = "192.168.183.107"
 
 def generate_frames(stop_event):
     robot = NiryoRobot(robot_ip)  # Cambia esta IP por la del robot Niryo Ned2 (ae)

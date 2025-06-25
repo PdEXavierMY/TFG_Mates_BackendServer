@@ -1,9 +1,9 @@
 from pyniryo import NiryoRobot
 
-ROBOT_IP = "192.168.32.107"
+robot_ip = "192.168.183.107"
 
 try:
-    robot = NiryoRobot(ROBOT_IP)
+    robot = NiryoRobot(robot_ip)
     print("ok")
 except Exception as e:
     print("error")
